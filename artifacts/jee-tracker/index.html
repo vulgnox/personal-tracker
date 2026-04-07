@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <title>JEE Mains Journey Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0d14;
+      --bg2: #111520;
+      --bg3: #171c2e;
+      --bg4: #1e2438;
+      --card: #1a1f32;
+      --card2: #1f2540;
+      --border: #2a3050;
+      --blue: #3b6ef8;
+      --blue2: #2855d8;
+      --blue-glow: rgba(59,110,248,0.18);
+      --orange: #f97316;
+      --orange2: #ea6a0a;
+      --orange-glow: rgba(249,115,22,0.18);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e8eaf0;
+      --text2: #9ba3b8;
+      --text3: #6b7491;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --nav-h: 68px;
+      --header-h: 56px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      background: var(--bg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--header-h);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      backdrop-filter: blur(12px);
+    }
+    .header-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .header-title span { color: var(--orange); }
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--orange-glow);
+      border: 1px solid rgba(249,115,22,0.3);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+    }
+
+    /* SCROLL CONTAINER */
+    .page-content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: calc(var(--nav-h) + 12px);
+      scroll-behavior: smooth;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: var(--nav-h);
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 200;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 12px;
+      transition: all 0.18s ease;
+      background: none;
+      border: none;
+      color: var(--text3);
+      flex: 1;
+    }
+    .nav-item svg { width: 22px; height: 22px; transition: all 0.18s ease; }
+    .nav-item span { font-size: 10px; font-weight: 500; transition: all 0.18s ease; }
+    .nav-item.active { color: var(--blue); }
+    .nav-item.active svg { filter: drop-shadow(0 0 6px var(--blue)); }
+
+    /* PAGE SECTIONS */
+    .page { display: none; padding: 16px 20px; }
+    .page.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+
+    /* DASHBOARD */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .dash-stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+    .dash-stat-val {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .dash-stat-label {
+      font-size: 11px;
+      color: var(--text3);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .blue-val { color: var(--blue); }
+    .orange-val { color: var(--orange); }
+    .green-val { color: var(--green); }
+
+    /* PROGRESS BAR */
+    .progress-wrap { margin-bottom: 6px; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text2);
+    }
+    .progress-label strong { color: var(--text); }
+    .progress-bar-bg {
+      background: var(--bg4);
+      border-radius: 100px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      transition: width 0.5s ease;
+    }
+
+    /* SUBJECT BARS */
+    .subject-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .subject-label {
+      font-size: 13px;
+      font-weight: 600;
+      width: 72px;
+      color: var(--text2);
+    }
+    .subject-bar-wrap { flex: 1; }
+    .subject-val {
+      font-size: 13px;
+      font-weight: 700;
+      width: 36px;
+      text-align: right;
+    }
+    .physics-fill { background: var(--blue) !important; }
+    .chemistry-fill { background: var(--green) !important; }
+    .math-fill { background: var(--orange) !important; }
+
+    /* QUOTE CARD */
+    .quote-card {
+      background: linear-gradient(135deg, var(--bg3), var(--bg4));
+      border: 1px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .quote-card::before {
+      content: '"';
+      position: absolute;
+      top: -10px;
+      left: 12px;
+      font-size: 80px;
+      color: var(--blue);
+      opacity: 0.12;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .quote-text {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.55;
+      color: var(--text);
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+    }
+    .quote-author {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--blue);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* CHART */
+    .chart-wrap {
+      position: relative;
+      height: 170px;
+      padding: 4px 0;
+    }
+
+    /* STUDY LOG */
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      width: 80px;
+      color: var(--text2);
+    }
+    input[type="number"], input[type="time"], input[type="text"], select {
+      background: var(--bg4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    input[type="number"]:focus, input[type="time"]:focus,
+    input[type="text"]:focus, select:focus {
+      border-color: var(--blue);
+    }
+    input[type="number"] { width: 90px; }
+    input[type="time"] { flex: 1; }
+    input[type="text"] { flex: 1; }
+    select { flex: 1; background-color: var(--bg4); }
+    option { background: var(--bg3); }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 13px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+      font-family: 'Inter', sans-serif;
+      width: 100%;
+    }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn-primary:active { background: var(--blue2); transform: scale(0.98); }
+    .btn-orange {
+      background: var(--orange);
+      color: #fff;
+    }
+    .btn-orange:active { background: var(--orange2); transform: scale(0.98); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:active { background: var(--bg4); }
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-sm {
+      padding: 9px 16px;
+      font-size: 13px;
+    }
+
+    /* HISTORY LIST */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-date { font-size: 13px; color: var(--text3); }
+    .history-hours {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+    .history-subjects {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .sub-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 100px;
+      background: var(--bg4);
+      color: var(--text3);
+    }
+
+    /* TIMER */
+    .timer-display {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+    .timer-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+    .timer-circle {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 20px;
+    }
+    .timer-svg { transform: rotate(-90deg); }
+    .timer-track {
+      fill: none;
+      stroke: var(--bg4);
+      stroke-width: 10;
+    }
+    .timer-progress {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+    .timer-time {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: var(--text);
+    }
+    .timer-phase {
+      font-size: 13px;
+      color: var(--text3);
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .timer-phase span { color: var(--orange); font-weight: 700; }
+    .timer-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .task-input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .task-display {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--text2);
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .task-display strong { color: var(--orange); margin-right: 6px; }
+
+    /* SCREEN TIME */
+    .screen-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .screen-stat:last-child { border-bottom: none; }
+    .screen-stat-val { font-weight: 700; color: var(--blue); }
+    .warning-bar {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--red);
+      display: none;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .warning-bar.visible { display: block; }
+
+    /* REMINDERS */
+    .reminder-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .reminder-item:last-child { border-bottom: none; }
+    .reminder-info { flex: 1; }
+    .reminder-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .reminder-time { font-size: 12px; color: var(--text3); }
+    .reminder-delete {
+      background: none;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 16px;
+      opacity: 0.7;
+    }
+    .reminder-delete:hover { opacity: 1; }
+    .day-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .day-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: var(--bg4);
+      color: var(--text3);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .day-badge.on {
+      background: var(--blue-glow);
+      color: var(--blue);
+      border-color: var(--blue);
+    }
+
+    /* FOCUS MODE */
+    #focus-mode-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #focus-mode-overlay.active { display: flex; }
+    .focus-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--orange);
+      background: var(--orange-glow);
+      border: 1px solid rgba(249,115,22,0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+    }
+    .focus-quote {
+      font-size: 17px;
+      font-style: italic;
+      color: var(--text2);
+      text-align: center;
+      line-height: 1.65;
+      max-width: 320px;
+      margin-bottom: 32px;
+    }
+    .focus-task-label {
+      font-size: 13px;
+      color: var(--text3);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .focus-task-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--orange);
+      margin-bottom: 36px;
+      text-align: center;
+    }
+    .focus-exit-btn {
+      font-size: 14px;
+      color: var(--text3);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* TOGGLE */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .toggle-label { font-size: 14px; font-weight: 500; }
+    .toggle-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+    .toggle {
+      position: relative;
+      width: 46px;
+      height: 26px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--bg4);
+      border-radius: 26px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 1px solid var(--border);
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--text3);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--blue); border-color: var(--blue); }
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(20px) translateY(-50%);
+      background: #fff;
+    }
+
+    /* GOAL EDIT */
+    .goal-edit {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .goal-edit label { font-size: 13px; color: var(--text2); flex: 1; }
+    .goal-edit input { width: 70px; }
+
+    /* NOTIFICATION PERMISSION */
+    .notif-banner {
+      background: var(--blue-glow);
+      border: 1px solid rgba(59,110,248,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--blue);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .notif-banner svg { flex-shrink: 0; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 30px 0;
+      color: var(--text3);
+      font-size: 13px;
+    }
+    .empty-state svg { width: 40px; height: 40px; opacity: 0.3; margin: 0 auto 10px; display: block; }
+
+    /* SECTION DIVIDER */
+    .divider {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin: 18px 0 10px;
+    }
+
+    /* GOAL INPUT FOOTER */
+    .form-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+
+    /* Next reminder pill */
+    .next-reminder-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 4px;
+    }
+    .next-reminder-pill svg { color: var(--blue); }
+
+    /* Log success toast */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 16px);
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green);
+      color: #fff;
+      padding: 11px 22px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 10000;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (prefers-color-scheme: light) {
+      /* Force dark mode regardless */
+      html { background: var(--bg); }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <div class="header-title">JEE<span>Tracker</span></div>
+    <div class="streak-badge">
+      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></svg>
+      <span id="streak-count">0</span> day streak
+    </div>
+  </header>
+
+  <main class="page-content">
+    <!-- HOME PAGE -->
+    <section class="page active" id="page-home">
+      <div class="dash-grid">
+        <div class="dash-stat">
+          <div class="dash-stat-val blue-val" id="dash-today">0.0h</div>
+          <div class="dash-stat-label">Today's Study</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-val orange-val" id="dash-streak">0</div>
+          <div class="dash-stat-label">Day Streak</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-val green-val" id="dash-weekly">0.0h</div>
+          <div class="dash-stat-label">This Week</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-val" id="dash-goal-pct" style="color:var(--yellow)">0%</div>
+          <div class="dash-stat-label">Goal Progress</div>
+        </div>
+      </div>
+
+      <!-- Daily goal progress -->
+      <div class="card">
+        <div class="card-title">Today's Goal Progress</div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Daily Goal: <strong id="goal-label">8h</strong></span>
+            <span id="goal-hours-done">0 / 8h done</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="goal-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="subject-row">
+            <div class="subject-label" style="color:#3b6ef8">Physics</div>
+            <div class="subject-bar-wrap">
+              <div class="progress-bar-bg"><div class="progress-bar-fill physics-fill" id="bar-phy" style="width:0%"></div></div>
+            </div>
+            <div class="subject-val blue-val" id="val-phy">0h</div>
+          </div>
+          <div class="subject-row">
+            <div class="subject-label" style="color:#22c55e">Chemistry</div>
+            <div class="subject-bar-wrap">
+              <div class="progress-bar-bg"><div class="progress-bar-fill chemistry-fill" id="bar-chem" style="width:0%"></div></div>
+            </div>
+            <div class="subject-val green-val" id="val-chem">0h</div>
+          </div>
+          <div class="subject-row" style="margin-bottom:0">
+            <div class="subject-label" style="color:#f97316">Maths</div>
+            <div class="subject-bar-wrap">
+              <div class="progress-bar-bg"><div class="progress-bar-fill math-fill" id="bar-math" style="width:0%"></div></div>
+            </div>
+            <div class="subject-val orange-val" id="val-math">0h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quote -->
+      <div class="quote-card" id="home-quote-card">
+        <div class="quote-text" id="home-quote-text">Loading...</div>
+        <div class="quote-author">JEE Motivation</div>
+      </div>
+
+      <!-- Next reminder -->
+      <div class="card">
+        <div class="card-title">Next Reminder</div>
+        <div id="next-reminder-display" style="color:var(--text3); font-size:13px">No reminders set.</div>
+      </div>
+
+      <!-- Weekly chart -->
+      <div class="card">
+        <div class="card-title">Weekly Study Hours</div>
+        <div class="chart-wrap">
+          <canvas id="weekly-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDY LOG PAGE -->
+    <section class="page" id="page-log">
+      <div class="card">
+        <div class="form-section-title">Log Today's Study Hours</div>
+        <div class="input-row">
+          <div class="input-label">Physics</div>
+          <input type="number" id="inp-phy" min="0" max="24" step="0.5" placeholder="0" value="0">
+          <span style="color:var(--text3);font-size:13px">hrs</span>
+        </div>
+        <div class="input-row">
+          <div class="input-label">Chemistry</div>
+          <input type="number" id="inp-chem" min="0" max="24" step="0.5" placeholder="0" value="0">
+          <span style="color:var(--text3);font-size:13px">hrs</span>
+        </div>
+        <div class="input-row">
+          <div class="input-label">Maths</div>
+          <input type="number" id="inp-math" min="0" max="24" step="0.5" placeholder="0" value="0">
+          <span style="color:var(--text3);font-size:13px">hrs</span>
+        </div>
+        <button class="btn btn-primary" onclick="logStudy()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          Save Today's Log
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="form-section-title">Daily Goal</div>
+        <div class="goal-edit">
+          <label>Set daily study goal (hours)</label>
+          <input type="number" id="goal-input" min="1" max="24" step="0.5" value="8">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="saveGoal()">Update Goal</button>
+      </div>
+
+      <div class="divider">Study History (Last 7 Days)</div>
+      <div class="card" id="history-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          No study sessions logged yet.
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMER PAGE -->
+    <section class="page" id="page-timer">
+      <!-- Screen time warning -->
+      <div class="warning-bar" id="screen-time-warn">
+        You've been on the app for a while! Log your study session and get back to work.
+      </div>
+
+      <!-- Task input -->
+      <div class="card">
+        <div class="form-section-title">Current Task</div>
+        <div class="task-input-wrap">
+          <input type="text" id="task-input" placeholder="e.g. Solve 30 JEE problems – Optics" />
+          <button class="btn btn-outline btn-sm" style="width:auto;white-space:nowrap" onclick="setTask()">Set</button>
+        </div>
+        <div class="task-display" id="task-display">
+          <strong>Task:</strong> <span id="task-text">No task set</span>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div class="card">
+        <div class="timer-display">
+          <div class="timer-label" id="timer-label">FOCUS SESSION</div>
+          <div class="timer-circle">
+            <svg class="timer-svg" width="200" height="200" viewBox="0 0 200 200">
+              <circle class="timer-track" cx="100" cy="100" r="88"/>
+              <circle class="timer-progress" id="timer-arc" cx="100" cy="100" r="88"
+                stroke-dasharray="553"
+                stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-time" id="timer-time">45:00</div>
+          </div>
+          <div class="timer-phase">
+            Session <span id="session-count">1</span> &middot; 
+            <span id="phase-label" style="color:var(--blue)">Study</span> phase
+          </div>
+        </div>
+        <div class="timer-btns">
+          <button class="btn btn-primary" id="timer-start-btn" onclick="toggleTimer()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Start
+          </button>
+          <button class="btn btn-outline" onclick="resetTimer()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/></svg>
+            Reset
+          </button>
+        </div>
+        <div style="margin-top:10px">
+          <button class="btn btn-orange" onclick="enterFocusMode()" style="gap:8px">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            Enter Focus Mode
+          </button>
+        </div>
+      </div>
+
+      <!-- Screen time -->
+      <div class="card">
+        <div class="card-title">Screen Time</div>
+        <div class="screen-stat">
+          <span>Today's app time</span>
+          <span class="screen-stat-val" id="screen-time-today">0 min</span>
+        </div>
+        <div class="screen-stat">
+          <span>Daily limit</span>
+          <span class="screen-stat-val">
+            <input type="number" id="screen-limit-input" min="10" max="480" step="10" value="60"
+              style="width:60px;padding:4px 8px;font-size:13px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit"
+              onchange="saveScreenLimit()"> min
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- REMINDERS PAGE -->
+    <section class="page" id="page-reminders">
+      <div class="notif-banner" id="notif-banner" onclick="requestNotifPermission()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Tap to enable browser notifications for reminders
+      </div>
+
+      <div class="card">
+        <div class="form-section-title">Add New Reminder</div>
+        <div class="input-row">
+          <div class="input-label">Label</div>
+          <input type="text" id="rem-label" placeholder="e.g. Start studying">
+        </div>
+        <div class="input-row">
+          <div class="input-label">Time</div>
+          <input type="time" id="rem-time" value="06:00">
+        </div>
+        <div class="divider" style="margin-top:4px;margin-bottom:8px">Repeat Days</div>
+        <div class="day-badges" id="day-selector">
+          <span class="day-badge on" data-day="0">Sun</span>
+          <span class="day-badge on" data-day="1">Mon</span>
+          <span class="day-badge on" data-day="2">Tue</span>
+          <span class="day-badge on" data-day="3">Wed</span>
+          <span class="day-badge on" data-day="4">Thu</span>
+          <span class="day-badge on" data-day="5">Fri</span>
+          <span class="day-badge on" data-day="6">Sat</span>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn btn-primary" onclick="addReminder()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Add Reminder
+          </button>
+        </div>
+      </div>
+
+      <div class="divider">Active Reminders</div>
+      <div class="card" id="reminders-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          No reminders added yet.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daily Check-In</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Remind if no session logged</div>
+            <div class="toggle-sub">Alert if no study logged by check-in time</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="checkin-toggle" checked onchange="saveCheckIn()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="input-row">
+          <div class="input-label">Check-in at</div>
+          <input type="time" id="checkin-time" value="21:00" onchange="saveCheckIn()">
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home" onclick="switchPage('home', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" data-page="log" onclick="switchPage('log', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Study Log</span>
+    </button>
+    <button class="nav-item" data-page="timer" onclick="switchPage('timer', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Timer</span>
+    </button>
+    <button class="nav-item" data-page="reminders" onclick="switchPage('reminders', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span>Reminders</span>
+    </button>
+  </nav>
+</div>
+
+<!-- FOCUS MODE OVERLAY -->
+<div id="focus-mode-overlay">
+  <div class="focus-badge">FOCUS MODE</div>
+  <div class="timer-circle" style="margin-bottom:24px">
+    <svg class="timer-svg" width="200" height="200" viewBox="0 0 200 200">
+      <circle class="timer-track" cx="100" cy="100" r="88"/>
+      <circle class="timer-progress" id="focus-timer-arc" cx="100" cy="100" r="88"
+        stroke-dasharray="553" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-time" id="focus-timer-time">45:00</div>
+  </div>
+  <div class="focus-task-label">Current Task</div>
+  <div class="focus-task-val" id="focus-task-val">Study Session</div>
+  <div class="focus-quote" id="focus-quote-text"></div>
+  <button class="focus-exit-btn" onclick="exitFocusMode()">Exit Focus Mode</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module" src="/src/main.tsx" style="display:none"></script>
+<script>
+// ==============================
+// DATA & STATE
+// ==============================
+const QUOTES = [
+  "Success is the sum of small efforts, repeated day in and day out.",
+  "The difference between try and triumph is just a little 'umph'.",
+  "JEE is not a destination, it's a journey that forges champions.",
+  "You don't have to be great to start, but you have to start to be great.",
+  "Every hour you study today brings you one hour closer to your dream college.",
+  "IIT is not for everyone — that's exactly why you should work for it.",
+  "Pain is temporary. IIT tag is permanent.",
+  "When you feel like quitting, think about why you started.",
+  "The only way to do great work is to love what you do — and study hard for it.",
+  "Your rank is being decided right now, while you're studying.",
+  "Consistency beats talent when talent doesn't practice consistently.",
+  "The rank list doesn't care about your excuses — only your effort.",
+  "One more hour of study today could change your life tomorrow.",
+  "Toppers don't study 24 hours — they study smartly, every day.",
+  "Your JEE preparation is an investment — the returns are life-changing.",
+  "Do today what others won't, so tomorrow you can have what others can't.",
+  "Hard work + Smart work + Consistency = IIT",
+  "The ceiling you're staring at is the floor someone else is standing on.",
+  "Every problem you solve is a step closer to rank 1.",
+  "Believe in yourself. You've survived 100% of your bad days so far."
+];
+
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+function getWeekKeys() {
+  const keys = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    keys.push(d.toISOString().slice(0, 10));
+  }
+  return keys;
+}
+function load(k, def) {
+  try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; }
+}
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+// ==============================
+// STUDY LOGGING
+// ==============================
+function getTodayData() {
+  return load('study_' + todayKey(), { phy: 0, chem: 0, math: 0 });
+}
+function logStudy() {
+  const phy = parseFloat(document.getElementById('inp-phy').value) || 0;
+  const chem = parseFloat(document.getElementById('inp-chem').value) || 0;
+  const math = parseFloat(document.getElementById('inp-math').value) || 0;
+  const existing = getTodayData();
+  const data = {
+    phy: existing.phy + phy,
+    chem: existing.chem + chem,
+    math: existing.math + math
+  };
+  save('study_' + todayKey(), data);
+  updateStreak();
+  refreshDashboard();
+  refreshHistory();
+  document.getElementById('inp-phy').value = 0;
+  document.getElementById('inp-chem').value = 0;
+  document.getElementById('inp-math').value = 0;
+  showToast('Study session logged!');
+}
+
+function saveGoal() {
+  const g = parseFloat(document.getElementById('goal-input').value) || 8;
+  save('daily_goal', g);
+  refreshDashboard();
+  showToast('Goal updated!');
+}
+
+// ==============================
+// STREAK
+// ==============================
+function updateStreak() {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const data = load('study_' + key, null);
+    if (!data) break;
+    const total = (data.phy || 0) + (data.chem || 0) + (data.math || 0);
+    if (total > 0) streak++;
+    else break;
+  }
+  save('streak', streak);
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('dash-streak').textContent = streak;
+  return streak;
+}
+
+// ==============================
+// DASHBOARD REFRESH
+// ==============================
+function refreshDashboard() {
+  const today = getTodayData();
+  const total = (today.phy || 0) + (today.chem || 0) + (today.math || 0);
+  const goal = load('daily_goal', 8);
+  const streak = load('streak', 0);
+  const pct = Math.min(100, Math.round((total / goal) * 100));
+
+  document.getElementById('dash-today').textContent = total.toFixed(1) + 'h';
+  document.getElementById('dash-streak').textContent = streak;
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('dash-goal-pct').textContent = pct + '%';
+
+  // Weekly total
+  const weekKeys = getWeekKeys();
+  let weeklyTotal = 0;
+  weekKeys.forEach(k => {
+    const d = load('study_' + k, null);
+    if (d) weeklyTotal += (d.phy || 0) + (d.chem || 0) + (d.math || 0);
+  });
+  document.getElementById('dash-weekly').textContent = weeklyTotal.toFixed(1) + 'h';
+
+  // Goal bar
+  document.getElementById('goal-bar').style.width = pct + '%';
+  document.getElementById('goal-label').textContent = goal + 'h';
+  document.getElementById('goal-hours-done').textContent = total.toFixed(1) + ' / ' + goal + 'h done';
+
+  // Subject bars
+  const maxSubj = Math.max(goal, total, 1);
+  document.getElementById('bar-phy').style.width = Math.min(100, (today.phy / maxSubj) * 100) + '%';
+  document.getElementById('bar-chem').style.width = Math.min(100, (today.chem / maxSubj) * 100) + '%';
+  document.getElementById('bar-math').style.width = Math.min(100, (today.math / maxSubj) * 100) + '%';
+  document.getElementById('val-phy').textContent = (today.phy || 0).toFixed(1) + 'h';
+  document.getElementById('val-chem').textContent = (today.chem || 0).toFixed(1) + 'h';
+  document.getElementById('val-math').textContent = (today.math || 0).toFixed(1) + 'h';
+
+  // Goal input sync
+  document.getElementById('goal-input').value = goal;
+
+  // Quote
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  document.getElementById('home-quote-text').textContent = q;
+
+  // Next reminder
+  refreshNextReminder();
+
+  // Chart
+  refreshChart(weekKeys);
+}
+
+// ==============================
+// CHART
+// ==============================
+let chartInst = null;
+function refreshChart(weekKeys) {
+  const labels = weekKeys.map(k => {
+    const d = new Date(k + 'T00:00:00');
+    return DAYS_SHORT[d.getDay()];
+  });
+  const vals = weekKeys.map(k => {
+    const d = load('study_' + k, null);
+    if (!d) return 0;
+    return parseFloat(((d.phy || 0) + (d.chem || 0) + (d.math || 0)).toFixed(1));
+  });
+
+  const ctx = document.getElementById('weekly-chart').getContext('2d');
+  if (chartInst) { chartInst.destroy(); }
+  chartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: vals.map((_, i) => i === 6 ? '#3b6ef8' : 'rgba(59,110,248,0.35)'),
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1f32',
+          titleColor: '#9ba3b8',
+          bodyColor: '#e8eaf0',
+          borderColor: '#2a3050',
+          borderWidth: 1,
+          callbacks: { label: ctx => ctx.parsed.y + 'h' }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#6b7491', font: { size: 11, family: "'Inter',sans-serif", weight: '600' } },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: '#1e2438', drawBorder: false },
+          ticks: { color: '#6b7491', font: { size: 11, family: "'Inter',sans-serif" }, stepSize: 2 },
+          border: { display: false },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+// ==============================
+// HISTORY
+// ==============================
+function refreshHistory() {
+  const keys = getWeekKeys().reverse();
+  const el = document.getElementById('history-list');
+  const rows = keys.map(k => {
+    const d = load('study_' + k, null);
+    if (!d) return null;
+    const total = (d.phy || 0) + (d.chem || 0) + (d.math || 0);
+    if (total === 0) return null;
+    const date = new Date(k + 'T00:00:00');
+    const label = k === todayKey() ? 'Today' : date.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `<div class="history-item">
+      <div>
+        <div style="font-size:14px;font-weight:600">${label}</div>
+        <div class="history-subjects">
+          <span class="sub-pill" style="color:#3b6ef8">P: ${d.phy.toFixed(1)}h</span>
+          <span class="sub-pill" style="color:#22c55e">C: ${d.chem.toFixed(1)}h</span>
+          <span class="sub-pill" style="color:#f97316">M: ${d.math.toFixed(1)}h</span>
+        </div>
+      </div>
+      <div class="history-hours">${total.toFixed(1)}h</div>
+    </div>`;
+  }).filter(Boolean);
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      No study sessions logged yet.
+    </div>`;
+  } else {
+    el.innerHTML = rows.join('');
+  }
+}
+
+// ==============================
+// POMODORO TIMER
+// ==============================
+const STUDY_TIME = 45 * 60;
+const BREAK_TIME = 10 * 60;
+let timerState = { running: false, phase: 'study', remaining: STUDY_TIME, session: 1, interval: null };
+
+function updateTimerUI() {
+  const { remaining, phase, session } = timerState;
+  const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const secs = String(remaining % 60).padStart(2, '0');
+  const timeStr = `${mins}:${secs}`;
+  document.getElementById('timer-time').textContent = timeStr;
+  document.getElementById('focus-timer-time').textContent = timeStr;
+  document.getElementById('session-count').textContent = session;
+  const total = phase === 'study' ? STUDY_TIME : BREAK_TIME;
+  const progress = remaining / total;
+  const circumference = 553;
+  const offset = circumference * (1 - progress);
+  const arc = document.getElementById('timer-arc');
+  const focusArc = document.getElementById('focus-timer-arc');
+  arc.style.strokeDashoffset = offset;
+  focusArc.style.strokeDashoffset = offset;
+  const color = phase === 'study' ? '#3b6ef8' : '#22c55e';
+  arc.style.stroke = color;
+  focusArc.style.stroke = color;
+  document.getElementById('timer-label').textContent = phase === 'study' ? 'FOCUS SESSION' : 'BREAK TIME';
+  document.getElementById('phase-label').textContent = phase === 'study' ? 'Study' : 'Break';
+  document.getElementById('phase-label').style.color = color;
+}
+
+function toggleTimer() {
+  if (timerState.running) {
+    clearInterval(timerState.interval);
+    timerState.running = false;
+    document.getElementById('timer-start-btn').innerHTML = `<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Resume`;
+    document.getElementById('timer-start-btn').className = 'btn btn-primary';
+  } else {
+    timerState.running = true;
+    document.getElementById('timer-start-btn').innerHTML = `<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Pause`;
+    document.getElementById('timer-start-btn').className = 'btn btn-outline';
+    timerState.interval = setInterval(() => {
+      if (timerState.remaining <= 0) {
+        clearInterval(timerState.interval);
+        timerState.running = false;
+        // switch phase
+        if (timerState.phase === 'study') {
+          timerState.phase = 'break';
+          timerState.remaining = BREAK_TIME;
+          notifyUser('Break Time!', "Great work! Take a 10-minute break.");
+          showToast('Break time! Rest for 10 mins.');
+        } else {
+          timerState.phase = 'study';
+          timerState.remaining = STUDY_TIME;
+          timerState.session++;
+          notifyUser('Study Time!', "Break over! Back to focusing.");
+          showToast('Session ' + timerState.session + ' started!');
+        }
+        updateTimerUI();
+        document.getElementById('timer-start-btn').innerHTML = `<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Start`;
+        document.getElementById('timer-start-btn').className = 'btn btn-primary';
+        // Auto-start next
+        setTimeout(() => toggleTimer(), 1000);
+      } else {
+        timerState.remaining--;
+        updateTimerUI();
+        // Update focus mode quote periodically
+        if (timerState.remaining % 60 === 0 && document.getElementById('focus-mode-overlay').classList.contains('active')) {
+          document.getElementById('focus-quote-text').textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        }
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerState.interval);
+  timerState = { running: false, phase: 'study', remaining: STUDY_TIME, session: 1, interval: null };
+  updateTimerUI();
+  document.getElementById('timer-start-btn').innerHTML = `<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Start`;
+  document.getElementById('timer-start-btn').className = 'btn btn-primary';
+}
+
+function setTask() {
+  const t = document.getElementById('task-input').value.trim();
+  if (!t) return;
+  save('current_task', t);
+  document.getElementById('task-text').textContent = t;
+  document.getElementById('focus-task-val').textContent = t;
+}
+
+// ==============================
+// FOCUS MODE
+// ==============================
+function enterFocusMode() {
+  const overlay = document.getElementById('focus-mode-overlay');
+  overlay.classList.add('active');
+  document.getElementById('focus-quote-text').textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  const task = load('current_task', 'Study Session');
+  document.getElementById('focus-task-val').textContent = task;
+  updateTimerUI();
+  // Start timer if not running
+  if (!timerState.running) toggleTimer();
+}
+
+function exitFocusMode() {
+  document.getElementById('focus-mode-overlay').classList.remove('active');
+}
+
+// Prevent navigation away during focus mode
+window.addEventListener('beforeunload', (e) => {
+  if (document.getElementById('focus-mode-overlay').classList.contains('active')) {
+    e.preventDefault();
+    e.returnValue = 'You are in Focus Mode! Are you sure you want to leave?';
+  }
+});
+
+// ==============================
+// SCREEN TIME TRACKING
+// ==============================
+let screenStartTime = Date.now();
+let screenTimeToday = load('screen_time_' + todayKey(), 0);
+
+function updateScreenTime() {
+  const elapsed = Math.floor((Date.now() - screenStartTime) / 1000 / 60);
+  const total = screenTimeToday + elapsed;
+  document.getElementById('screen-time-today').textContent = total + ' min';
+
+  const limit = load('screen_limit', 60);
+  if (total > limit) {
+    document.getElementById('screen-time-warn').classList.add('visible');
+    document.getElementById('screen-time-warn').textContent =
+      `You've been on the app for ${total} min (limit: ${limit} min). Log your study and get back to it!`;
+  } else {
+    document.getElementById('screen-time-warn').classList.remove('visible');
+  }
+}
+
+function saveScreenLimit() {
+  const v = parseInt(document.getElementById('screen-limit-input').value) || 60;
+  save('screen_limit', v);
+}
+
+setInterval(() => {
+  const elapsed = Math.floor((Date.now() - screenStartTime) / 1000 / 60);
+  if (elapsed > 0) {
+    save('screen_time_' + todayKey(), screenTimeToday + elapsed);
+    updateScreenTime();
+  }
+}, 30000);
+
+window.addEventListener('beforeunload', () => {
+  const elapsed = Math.floor((Date.now() - screenStartTime) / 1000 / 60);
+  save('screen_time_' + todayKey(), screenTimeToday + elapsed);
+});
+
+// ==============================
+// REMINDERS
+// ==============================
+function addReminder() {
+  const label = document.getElementById('rem-label').value.trim();
+  const time = document.getElementById('rem-time').value;
+  if (!label || !time) { showToast('Please fill all fields', true); return; }
+  const days = [...document.querySelectorAll('#day-selector .day-badge.on')].map(el => parseInt(el.dataset.day));
+  const reminders = load('reminders', []);
+  reminders.push({ id: Date.now(), label, time, days });
+  save('reminders', reminders);
+  document.getElementById('rem-label').value = '';
+  refreshReminders();
+  showToast('Reminder added!');
+}
+
+function deleteReminder(id) {
+  const reminders = load('reminders', []).filter(r => r.id !== id);
+  save('reminders', reminders);
+  refreshReminders();
+  refreshNextReminder();
+}
+
+function refreshReminders() {
+  const reminders = load('reminders', []);
+  const el = document.getElementById('reminders-list');
+  if (!reminders.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      No reminders added yet.
+    </div>`;
+    return;
+  }
+  el.innerHTML = reminders.map(r => {
+    const dayNames = r.days.map(d => DAYS_SHORT[d]).join(', ');
+    return `<div class="reminder-item">
+      <div class="reminder-info">
+        <div class="reminder-title">${r.label}</div>
+        <div class="reminder-time">${formatTime12(r.time)} &middot; ${dayNames || 'No days'}</div>
+      </div>
+      <button class="reminder-delete" onclick="deleteReminder(${r.id})">&#x2715;</button>
+    </div>`;
+  }).join('');
+  refreshNextReminder();
+}
+
+function refreshNextReminder() {
+  const reminders = load('reminders', []);
+  const el = document.getElementById('next-reminder-display');
+  if (!reminders.length) { el.innerHTML = 'No reminders set.'; return; }
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const today = now.getDay();
+
+  let soonest = null, soonestMins = Infinity;
+  reminders.forEach(r => {
+    const [h, m] = r.time.split(':').map(Number);
+    const remMins = h * 60 + m;
+    r.days.forEach(d => {
+      let diff = (d - today + 7) % 7 * 24 * 60 + remMins - nowMins;
+      if (diff <= 0) diff += 7 * 24 * 60;
+      if (diff < soonestMins) {
+        soonestMins = diff;
+        soonest = r;
+      }
+    });
+  });
+
+  if (soonest) {
+    el.innerHTML = `<div class="next-reminder-pill">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      ${soonest.label} at ${formatTime12(soonest.time)}
+    </div>`;
+  } else {
+    el.innerHTML = 'No upcoming reminders.';
+  }
+}
+
+function formatTime12(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${suffix}`;
+}
+
+function saveCheckIn() {
+  save('checkin_enabled', document.getElementById('checkin-toggle').checked);
+  save('checkin_time', document.getElementById('checkin-time').value);
+}
+
+// ==============================
+// NOTIFICATIONS
+// ==============================
+function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      document.getElementById('notif-banner').style.display = 'none';
+      showToast('Notifications enabled!');
+    }
+  });
+}
+
+function notifyUser(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '' });
+  }
+}
+
+// Check reminders every minute
+function checkReminders() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const today = now.getDay();
+  const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+  // Regular reminders
+  const reminders = load('reminders', []);
+  reminders.forEach(r => {
+    if (r.time === timeStr && r.days.includes(today)) {
+      notifyUser(r.label, 'JEE Tracker reminder');
+      showToast(r.label);
+    }
+  });
+
+  // Check-in reminder
+  if (load('checkin_enabled', true)) {
+    const checkinTime = load('checkin_time', '21:00');
+    if (timeStr === checkinTime) {
+      const todayData = getTodayData();
+      const totalStudied = (todayData.phy || 0) + (todayData.chem || 0) + (todayData.math || 0);
+      if (totalStudied === 0) {
+        notifyUser("Study Check-In", "You haven't logged any study time today! Time to get started.");
+      }
+    }
+  }
+}
+setInterval(checkReminders, 60000);
+
+// ==============================
+// DAY BADGE TOGGLE
+// ==============================
+document.getElementById('day-selector').addEventListener('click', (e) => {
+  const badge = e.target.closest('.day-badge');
+  if (badge) badge.classList.toggle('on');
+});
+
+// ==============================
+// PAGE NAVIGATION
+// ==============================
+function switchPage(page, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  navEl.classList.add('active');
+  if (page === 'home') { refreshDashboard(); }
+  if (page === 'log') { refreshHistory(); }
+  if (page === 'timer') { updateScreenTime(); }
+  if (page === 'reminders') { refreshReminders(); }
+}
+
+// ==============================
+// TOAST
+// ==============================
+let toastTimer = null;
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ==============================
+// INIT
+// ==============================
+function init() {
+  // Load screen limit
+  const limit = load('screen_limit', 60);
+  document.getElementById('screen-limit-input').value = limit;
+
+  // Load check-in settings
+  document.getElementById('checkin-toggle').checked = load('checkin_enabled', true);
+  document.getElementById('checkin-time').value = load('checkin_time', '21:00');
+
+  // Load current task
+  const task = load('current_task', '');
+  if (task) {
+    document.getElementById('task-text').textContent = task;
+    document.getElementById('focus-task-val').textContent = task;
+  }
+
+  // Notification banner
+  if (Notification.permission === 'granted') {
+    document.getElementById('notif-banner').style.display = 'none';
+  }
+
+  // Update streak
+  updateStreak();
+
+  // Update screen time
+  updateScreenTime();
+
+  // Refresh dashboard
+  refreshDashboard();
+
+  // Init timer UI
+  updateTimerUI();
+}
+
+init();
+</script>
+</body>
+</html>
