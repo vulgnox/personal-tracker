@@ -16,12 +16,12 @@ console.log('[Server] Index.html exists:', fs.existsSync(path.join(staticPath, '
 // Serve static files from dist/public
 app.use(express.static(staticPath, { index: false }));
 
-// SPA fallback - serve index.html for all routes
+// SPA fallback - serve index.html for all routes (Express 5 compatible)
 app.get('/', (req, res) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
-app.get('*', (req, res) => {
+app.get(/^\/(?!.*\.)/, (req, res) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
