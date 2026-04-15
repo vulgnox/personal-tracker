@@ -1778,6 +1778,16 @@ init();
 // ==============================
 // FIREBASE INTEGRATION
 // ==============================
+// Set Firebase config from Vite env vars at build time
+window.__FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyB_t-RpMecPwhRKluNCBPHN7a2bZlC-1Jo',
+  authDomain: 'study-tracker-9a728.firebaseapp.com',
+  projectId: 'study-tracker-9a728',
+  storageBucket: 'study-tracker-9a728.firebasestorage.app',
+  messagingSenderId: '851267684830',
+  appId: '1:851267684830:web:e31f8b7fece98fc812354f',
+};
+
 // Dynamic Firebase import
 (async () => {
   try {
@@ -1785,14 +1795,14 @@ init();
     const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const { getFirestore, collection, addDoc, query, where, getDocs, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
 
-    // Get Firebase config from environment variables
-    const firebaseConfig = {
-      apiKey: import.meta?.env?.VITE_FIREBASE_API_KEY || localStorage.getItem('fb_apiKey'),
-      authDomain: import.meta?.env?.VITE_FIREBASE_AUTH_DOMAIN || localStorage.getItem('fb_authDomain'),
-      projectId: import.meta?.env?.VITE_FIREBASE_PROJECT_ID || localStorage.getItem('fb_projectId'),
-      storageBucket: import.meta?.env?.VITE_FIREBASE_STORAGE_BUCKET || localStorage.getItem('fb_storageBucket'),
-      messagingSenderId: import.meta?.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || localStorage.getItem('fb_messagingSenderId'),
-      appId: import.meta?.env?.VITE_FIREBASE_APP_ID || localStorage.getItem('fb_appId'),
+    // Get Firebase config from window object (filled by Vite)
+    const firebaseConfig = window.__FIREBASE_CONFIG || {
+      apiKey: localStorage.getItem('fb_apiKey'),
+      authDomain: localStorage.getItem('fb_authDomain'),
+      projectId: localStorage.getItem('fb_projectId'),
+      storageBucket: localStorage.getItem('fb_storageBucket'),
+      messagingSenderId: localStorage.getItem('fb_messagingSenderId'),
+      appId: localStorage.getItem('fb_appId'),
     };
 
     // Check if Firebase is configured
