@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "express": "^5"
+    "express": "^5",
+    "firebase": "^10.7.1"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

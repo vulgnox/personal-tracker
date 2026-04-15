@@ -716,15 +716,141 @@
       /* Force dark mode regardless */
       html { background: var(--bg); }
     }
+
+    /* AUTH MODAL STYLES */
+    .auth-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .auth-modal.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .auth-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 90%;
+      max-width: 380px;
+    }
+    .auth-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .auth-input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    .auth-input::placeholder { color: var(--text3); }
+    .auth-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--blue);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: background 0.2s;
+    }
+    .auth-btn:hover { background: var(--blue2); }
+    .auth-toggle {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .auth-toggle a {
+      color: var(--blue);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .auth-error {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid var(--red);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      color: #fca5a5;
+      margin-bottom: 14px;
+    }
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(59,110,248,0.1);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .logout-btn {
+      padding: 4px 12px;
+      background: var(--red);
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
   </style>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // This will be replaced by actual Firebase init in the main logic
+  </script>
 </head>
 <body>
+<!-- AUTH MODAL -->
+<div class="auth-modal" id="auth-modal">
+  <div class="auth-box">
+    <div class="auth-title" id="auth-title">Login</div>
+    <div class="auth-error" id="auth-error" style="display:none;"></div>
+    <input type="email" id="auth-email" class="auth-input" placeholder="Email" />
+    <input type="password" id="auth-password" class="auth-input" placeholder="Password" />
+    <button class="auth-btn" id="auth-submit">Login</button>
+    <div class="auth-toggle">
+      <span id="auth-toggle-text">Don't have an account? <a id="auth-toggle-link">Sign up</a></span>
+    </div>
+  </div>
+</div>
+
 <div id="app">
   <header class="header">
     <div class="header-title">JEE<span>Tracker</span></div>
-    <div class="streak-badge">
-      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></svg>
-      <span id="streak-count">0</span> day streak
+    <div id="header-right">
+      <div class="streak-badge">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></svg>
+        <span id="streak-count">0</span> day streak
+      </div>
+      <div id="user-section" style="display:none;">
+        <div class="user-info">
+          <span id="user-email">user@example.com</span>
+          <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1648,6 +1774,174 @@ function init() {
 }
 
 init();
+
+// ==============================
+// FIREBASE INTEGRATION
+// ==============================
+// Dynamic Firebase import
+(async () => {
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+    const { getFirestore, collection, addDoc, query, where, getDocs, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+    // Get Firebase config from environment variables
+    const firebaseConfig = {
+      apiKey: import.meta?.env?.VITE_FIREBASE_API_KEY || localStorage.getItem('fb_apiKey'),
+      authDomain: import.meta?.env?.VITE_FIREBASE_AUTH_DOMAIN || localStorage.getItem('fb_authDomain'),
+      projectId: import.meta?.env?.VITE_FIREBASE_PROJECT_ID || localStorage.getItem('fb_projectId'),
+      storageBucket: import.meta?.env?.VITE_FIREBASE_STORAGE_BUCKET || localStorage.getItem('fb_storageBucket'),
+      messagingSenderId: import.meta?.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || localStorage.getItem('fb_messagingSenderId'),
+      appId: import.meta?.env?.VITE_FIREBASE_APP_ID || localStorage.getItem('fb_appId'),
+    };
+
+    // Check if Firebase is configured
+    if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes('your_')) {
+      console.log('[Firebase] Not configured. Using localStorage only.');
+      return;
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let isAuthMode = 'login';
+
+    // Auth UI functions
+    function showAuthModal() {
+      document.getElementById('auth-modal').classList.add('show');
+      document.getElementById('app').style.display = 'none';
+    }
+
+    function hideAuthModal() {
+      document.getElementById('auth-modal').classList.remove('show');
+      document.getElementById('app').style.display = 'flex';
+    }
+
+    function showAuthError(msg) {
+      const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      if (!email || !password) {
+        showAuthError('Email and password required');
+        return;
+      }
+
+      try {
+        if (isAuthMode === 'login') {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          await createUserWithEmailAndPassword(auth, email, password);
+        }
+        hideAuthModal();
+        document.getElementById('auth-email').value = '';
+        document.getElementById('auth-password').value = '';
+        document.getElementById('auth-error').style.display = 'none';
+      } catch (err) {
+        showAuthError(err.message || 'Auth failed');
+      }
+    }
+
+    function toggleAuthMode() {
+      isAuthMode = isAuthMode === 'login' ? 'signup' : 'login';
+      document.getElementById('auth-title').textContent = isAuthMode === 'login' ? 'Login' : 'Sign Up';
+      document.getElementById('auth-submit').textContent = isAuthMode === 'login' ? 'Login' : 'Create Account';
+      document.getElementById('auth-toggle-text').innerHTML = isAuthMode === 'login' 
+        ? "Don't have an account? <a id='auth-toggle-link'>Sign up</a>"
+        : "Already have an account? <a id='auth-toggle-link'>Login</a>";
+      document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
+      document.getElementById('auth-error').style.display = 'none';
+    }
+
+    window.handleLogout = async () => {
+      try {
+        await signOut(auth);
+        currentUser = null;
+        isAuthMode = 'login';
+        showAuthModal();
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+    };
+
+    // Monitor auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        hideAuthModal();
+        document.getElementById('user-section').style.display = 'block';
+        document.getElementById('user-email').textContent = user.email;
+        loadUserData();
+      } else {
+        currentUser = null;
+        document.getElementById('user-section').style.display = 'none';
+        showAuthModal();
+      }
+    });
+
+    // Load user data from Firestore
+    async function loadUserData() {
+      if (!currentUser) return;
+      try {
+        const q = query(collection(db, 'studies'), where('userId', '==', currentUser.uid));
+        const snapshot = await getDocs(q);
+        const data = {};
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          data[d.date] = { phy: d.physics || 0, chem: d.chemistry || 0, math: d.maths || 0 };
+        });
+        // Merge with localStorage
+        Object.keys(data).forEach(k => save('study_' + k, data[k]));
+        refreshDashboard();
+        refreshHistory();
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+    }
+
+    // Sync study data to Firestore
+    async function syncToFirestore(date, phy, chem, math) {
+      if (!currentUser) return;
+      try {
+        await addDoc(collection(db, 'studies'), {
+          userId: currentUser.uid,
+          date: date,
+          physics: phy,
+          chemistry: chem,
+          maths: math,
+          timestamp: new Date()
+        });
+      } catch (err) {
+        console.error('Firestore sync error:', err);
+      }
+    }
+
+    // Override logStudy to sync with Firestore
+    const originalLogStudy = window.logStudy;
+    window.logStudy = function() {
+      originalLogStudy.call(this);
+      if (currentUser) {
+        const data = getTodayData();
+        syncToFirestore(todayKey(), data.phy, data.chem, data.math);
+      }
+    };
+
+    // Setup auth event listeners
+    document.getElementById('auth-submit').addEventListener('click', handleAuthSubmit);
+    document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
+
+  } catch (err) {
+    console.log('[Firebase] CDN import failed, using localStorage only:', err.message);
+  }
+})();
 </script>
 </body>
 </html>
